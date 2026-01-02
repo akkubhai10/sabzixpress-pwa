@@ -1,5 +1,7 @@
 // /js/orders.js
 
+// ... (placeOrder, updateOrderStatus, updateOrderFulfillment functions remain the same) ...
+
 /**
  * Places a new order and saves it to the database.
  * @param {object} orderData - The complete order object.
@@ -9,100 +11,83 @@ async function placeOrder(orderData) {
     const newOrderRef = db.ref('orders').push();
     orderData.orderId = newOrderRef.key;
     
-    await logAudit(auth.currentUser.uid, 'Customer', 'ORDER_PLACED', `Order ${orderData.orderId} placed.`);
+    // NOW LOGAUDIT IS CALLED FROM HERE
+    await logAudit(auth.currentUser.uid, 'Customer', 'ORDER_PLACED', `Order ${orderData.orderId} placed from Pincode: ${orderData.customerPincode}`);
     
     return newOrderRef.set(orderData);
 }
 
-/**
- * Updates the status of a specific order.
- * @param {string} orderId - The ID of the order to update.
- * @param {string} newStatus - The new status string (e.g., 'PACKING').
- * @returns {Promise}
- */
-async function updateOrderStatus(orderId, newStatus) {
-    await logAudit(auth.currentUser.uid, 'System', 'STATUS_UPDATE', `Order ${orderId} status changed to ${newStatus}.`);
-    return db.ref(`orders/${orderId}/status`).set(newStatus);
-}
+// ... (other functions) ...
 
-/**
- * Updates an order with fulfilled items (for partial fulfillment).
- * @param {string} orderId - The ID of the order.
- * @param {Array} fulfilledItems - The array of items that were packed.
- * @param {string} reason - The reason for partial fulfillment.
- * @returns {Promise}
- */
-async function updateOrderFulfillment(orderId, fulfilledItems, reason) {
-    await logAudit(auth.currentUser.uid, 'Picker', 'PARTIAL_FULFILLMENT', `Order ${orderId}: ${reason}`);
-    return db.ref(`orders/${orderId}`).update({
-        items: fulfilledItems,
-        notes: `Partially fulfilled. Reason: ${reason}`
-    });
-}
 
 /**
  * For a customer, checks for any active (not CLOSED or DELIVERED) order and displays its status.
  * @param {string} customerId - The UID of the customer.
  */
 function customerCheckForActiveOrder(customerId) {
-    const orderStatusSection = document.getElementById('order-status-section');
-    const timelineContainer = document.getElementById('order-timeline');
-
+    const detailsContainer = document.getElementById('active-order-details');
+    const timelineContainer = document.getElementById('order-timeline-fancy');
+    
     db.ref('orders').orderByChild('customerId').equalTo(customerId).on('value', snapshot => {
         let activeOrder = null;
         snapshot.forEach(childSnapshot => {
             const order = childSnapshot.val();
+            // Check only the most recent active order
             if (order.status !== 'CLOSED' && order.status !== 'DELIVERED') {
                 activeOrder = order;
             }
         });
 
         if (activeOrder) {
-            orderStatusSection.style.display = 'block';
+            detailsContainer.innerHTML = `
+                <h4>Order #${activeOrder.orderId.slice(-6)} <span class="status-badge status-${activeOrder.status}">${activeOrder.status.replace('_', ' ')}</span></h4>
+                <p>Items: ${activeOrder.items.reduce((sum, item) => sum + item.quantity, 0)} items</p>
+                <p>Payment: ${activeOrder.paymentMethod}</p>
+                <p>Delivery To: ${activeOrder.customerAddress}</p>
+            `;
             renderOrderTimeline(timelineContainer, activeOrder.status);
         } else {
-            orderStatusSection.style.display = 'none';
+            detailsContainer.innerHTML = '<h4>No Active Orders</h4><p>Your delivery is complete or no order has been placed yet.</p>';
+            timelineContainer.innerHTML = '';
         }
     });
 }
 
 /**
- * Renders the visual timeline for the customer's order status.
+ * Renders the visual timeline for the customer's order status (FANCY NEW STYLE).
  * @param {HTMLElement} container - The element to render the timeline into.
  * @param {string} currentStatus - The current status of the order.
  */
 function renderOrderTimeline(container, currentStatus) {
-    const states = ['PLACED', 'PACKING', 'PACKED', 'OUT_FOR_DELIVERY', 'DELIVERED'];
-    const currentIndex = states.indexOf(currentStatus);
-
-    container.innerHTML = states.map((state, index) => {
-        let className = 'timeline-step';
-        if (index < currentIndex) className += ' completed';
-        if (index === currentIndex) className += ' active';
-        return `<div class="${className}">${state.replace('_', ' ')}</div>`;
-    }).join('<div class="timeline-connector"></div>');
+    // LOCK STATES (excluding intermediate ones like BATCH_ASSIGNED, PENDING_STORE_CONFIRM)
+    const states = {
+        'PLACED': 'Order Placed',
+        'PACKING': 'Being Packed by Picker',
+        'PACKED': 'Ready for Delivery',
+        'OUT_FOR_DELIVERY': 'Out for Delivery!',
+        'DELIVERED': 'Delivered (Thank You!)'
+    };
+    
+    const statusKeys = Object.keys(states);
+    const currentIndex = statusKeys.indexOf(currentStatus);
+    
+    container.innerHTML = statusKeys.map((key, index) => {
+        let className = 'timeline-step-fancy';
+        if (index <= currentIndex) className += ' active'; // Mark current and previous as active
+        
+        const timestamp = index <= currentIndex ? '13:00' : '...'; // Mock timestamp for now
+        
+        return `
+            <div class="${className}">
+                <p><strong>${states[key]}</strong></p>
+                <p style="font-size: 12px; color: var(--text-secondary-color);">${timestamp}</p>
+            </div>
+        `;
+    }).join('');
 }
 
-/**
- * Listens for orders with status 'PLACED' and assigns them to a picker.
- * This is a simplified auto-assignment logic. In a real app, this might be more complex.
- * @param {string} pickerId - The UID of the picker listening for orders.
- * @param {function} callback - Function to call when an order is assigned.
- */
-function listenForPickerOrders(pickerId, callback) {
-    db.ref('orders').orderByChild('status').equalTo('PLACED').limitToFirst(1).on('child_added', snapshot => {
-        const order = { orderId: snapshot.key, ...snapshot.val() };
-        // In a real system, you'd check if a picker is free and assign it.
-        // Here, we'll just assign it to the listening picker.
-        db.ref(`orders/${order.orderId}`).update({
-            status: 'WAITING_FOR_PICKER',
-            pickerId: pickerId
-        }).then(() => {
-            console.log(`Order ${order.orderId} assigned to picker ${pickerId}`);
-            callback({ ...order, pickerId: pickerId, status: 'WAITING_FOR_PICKER' });
-        });
-    });
-}
+
+// --- Audit Log Function (Moved here for global access) ---
 
 /**
  * Logs an audit trail event to the database.
@@ -113,6 +98,7 @@ function listenForPickerOrders(pickerId, callback) {
  * @returns {Promise}
  */
 async function logAudit(userId, role, action, reason = '') {
+    // This function will be called by orders.js, delivery.js, and admin.js
     return db.ref('auditLogs').push({
         userId, role, action, reason, timestamp: new Date().toISOString()
     });

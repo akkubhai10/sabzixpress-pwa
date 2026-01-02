@@ -1,22 +1,105 @@
 /* /css/theme.css */
 :root {
-    --primary-color: #4CAF50; /* Green for customer app */
-    --secondary-color: #FF9800; /* Orange for picker app */
-    --tertiary-color: #2196F3; /* Blue for delivery app */
-    --admin-color: #607D8B; /* Slate Gray for admin */
-    
+    /* Color Palette */
+    --primary-color: #4CAF50; /* Green - ADD button, Success */
+    --highlight-color: #FFDD00; /* Blinkit Yellow - Header Background */
+    --secondary-color: #000000; /* Black */
+
     --success-color: #4CAF50;
     --error-color: #f44336;
-    --warning-color: #ffeb3b;
+    --warning-color: #ff9800;
 
-    --background-color: #f4f6f8;
-    --surface-color: #ffffff;
-    --text-primary-color: #212121;
-    --text-secondary-color: #757575;
-    --border-color: #e0e0e0;
-    --modal-backdrop-color: rgba(0, 0, 0, 0.6);
+    /* Light Theme */
+    --background-color-light: #f4f6f8;
+    --surface-color-light: #ffffff;
+    --text-primary-color-light: #212121;
+    --text-secondary-color-light: #757575;
+    --border-color-light: #e0e0e0;
+
+    /* Dark Theme */
+    --background-color-dark: #121212;
+    --surface-color-dark: #1e1e1e;
+    --text-primary-color-dark: #e0e0e0;
+    --text-secondary-color-dark: #b0b0b0;
+    --border-color-dark: #333333;
+    
+    /* Dynamic Theme Variables */
+    --background-color: var(--background-color-light);
+    --surface-color: var(--surface-color-light);
+    --text-primary-color: var(--text-primary-color-light);
+    --text-secondary-color: var(--text-secondary-color-light);
+    --border-color: var(--border-color-light);
 
     --font-family: 'Roboto', 'Segoe UI', sans-serif;
-    --border-radius: 8px;
+    --border-radius: 12px;
     --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}```
+}
+
+/* Dark Mode Logic */
+body[data-theme="dark"] {
+    --background-color: var(--background-color-dark);
+    --surface-color: var(--surface-color-dark);
+    --text-primary-color: var(--text-primary-color-dark);
+    --text-secondary-color: var(--text-secondary-color-dark);
+    --border-color: var(--border-color-dark);
+    background-color: var(--background-color-dark);
+    color: var(--text-primary-color-dark);
+}
+
+/* Item Card Blinkit Style */
+.item-card {
+    position: relative;
+    padding: 10px;
+    text-align: left;
+    height: 260px; /* Fixed height for consistency */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+.item-card img {
+    height: 100px;
+    object-fit: contain;
+    margin: 0 auto 5px;
+}
+.item-card .item-details {
+    flex-grow: 1;
+    padding: 5px 0;
+}
+.item-card h4 { margin: 0 0 5px; font-size: 14px; font-weight: 500;}
+.item-card .price-unit { color: var(--text-secondary-color); font-size: 12px; margin-bottom: 5px; }
+.item-card .price { font-weight: bold; font-size: 16px; color: var(--text-primary-color); }
+.item-card .add-control {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+}
+.item-card .btn.primary {
+    padding: 5px 15px;
+    border-radius: 6px;
+}
+
+/* Cart Modal Update */
+.cart-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--border-color);
+}
+.quantity-control button {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    margin: 0 5px;
+    border-radius: 50%;
+    font-size: 18px;
+    font-weight: bold;
+    background-color: var(--primary-color);
+    color: white;
+}
+.quantity-control .qty {
+    display: inline-block;
+    width: 20px;
+    text-align: center;
+}
