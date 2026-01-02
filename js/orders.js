@@ -103,3 +103,17 @@ function listenForPickerOrders(pickerId, callback) {
         });
     });
 }
+
+/**
+ * Logs an audit trail event to the database.
+ * @param {string} userId - The UID of the user performing the action.
+ * @param {string} role - The role of the user.
+ * @param {string} action - The action being performed (e.g., 'ORDER_PLACED').
+ * @param {string} reason - Optional reason or detail for the action.
+ * @returns {Promise}
+ */
+async function logAudit(userId, role, action, reason = '') {
+    return db.ref('auditLogs').push({
+        userId, role, action, reason, timestamp: new Date().toISOString()
+    });
+}

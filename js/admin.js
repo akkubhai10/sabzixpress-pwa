@@ -202,12 +202,6 @@ async function handleCreateTrip() {
 }
 
 // --- General Functions ---
-async function logAudit(userId, role, action, reason = '') {
-    return db.ref('auditLogs').push({
-        userId, role, action, reason, timestamp: new Date().toISOString()
-    });
-}
-
 async function getStoreReturnCode() {
     const codeRef = db.ref('config/storeReturnCode');
     let snap = await codeRef.once('value');
