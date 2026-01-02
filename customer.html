@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SabziXpress - Freshness Delivered</title>
+    <link rel="stylesheet" href="/css/theme.css">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#4CAF50">
+</head>
+<body>
+
+    <!-- Auth Screen -->
+    <div id="auth-screen" class="screen active">
+        <div class="container">
+            <h1>Welcome to SabziXpress</h1>
+            <p>Your local delivery partner.</p>
+            <div id="login-view">
+                <input type="email" id="login-email" placeholder="Email" autocomplete="email">
+                <input type="password" id="login-password" placeholder="Password" autocomplete="current-password">
+                <button id="login-btn" class="btn primary">Login</button>
+                <p>New here? <a href="#" id="show-signup">Create an account</a></p>
+            </div>
+            <div id="signup-view" style="display: none;">
+                <input type="text" id="signup-name" placeholder="Full Name" autocomplete="name">
+                <input type="email" id="signup-email" placeholder="Email" autocomplete="email">
+                <input type="password" id="signup-password" placeholder="Password" autocomplete="new-password">
+                <button id="signup-btn" class="btn primary">Sign Up</button>
+                <p>Already have an account? <a href="#" id="show-login">Login</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Screen (Protected) -->
+    <div id="app-screen" class="screen" style="display: none;">
+        <header>
+            <div class="container">
+                <h2>SabziXpress</h2>
+                <div class="header-icons">
+                    <span id="user-name"></span>
+                    <button id="logout-btn" class="btn-icon">🚪</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="container">
+            <!-- Area Availability Check -->
+            <div id="area-check" class="card">
+                <h3>Checking Service in Your Area...</h3>
+                <p id="area-status"></p>
+            </div>
+
+            <!-- Main content shown only if service is available -->
+            <div id="main-content" style="display: none;">
+                <!-- Promotional Banners -->
+                <div id="promo-banners" class="promo-container"></div>
+
+                <!-- Newly Launched Section -->
+                <section id="newly-launched-section">
+                    <h3>🆕 Newly Launched</h3>
+                    <div id="newly-launched-items" class="item-grid">
+                        <!-- Items will be injected by JS -->
+                    </div>
+                </section>
+
+                <!-- Categories Section -->
+                <section id="categories-section">
+                    <h3>Categories</h3>
+                    <div id="categories-grid" class="category-grid">
+                        <!-- Categories will be injected by JS -->
+                    </div>
+                </section>
+
+                <!-- Products Section -->
+                <section id="products-section">
+                    <div class="search-bar">
+                        <input type="text" id="search-input" placeholder="Search for sabzi, dairy...">
+                    </div>
+                    <h3 id="product-list-title">All Products</h3>
+                    <div id="products-grid" class="item-grid">
+                        <!-- Products will be injected by JS -->
+                    </div>
+                </section>
+
+                 <!-- Order Status Section -->
+                <section id="order-status-section" class="card" style="display: none;">
+                    <h3>My Current Order</h3>
+                    <div id="order-timeline">
+                        <!-- Status timeline will be injected by JS -->
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- Cart Floating Button -->
+        <button id="cart-fab" class="fab">
+            🛒 <span id="cart-count">0</span>
+        </button>
+
+        <!-- Cart Modal -->
+        <div id="cart-modal" class="modal">
+            <div class="modal-content">
+                <span class="close-btn">&times;</span>
+                <h2>Your Cart</h2>
+                <div id="cart-items"></div>
+                <div id="cart-summary">
+                    <h4>Select Payment Method</h4>
+                    <select id="payment-method">
+                        <option value="COD">Cash on Delivery (COD)</option>
+                        <option value="UPI_ON_DELIVERY">UPI on Delivery</option>
+                    </select>
+                    <button id="place-order-btn" class="btn primary">Place Order</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-messaging-compat.js"></script>
+
+
+    <!-- App Logic Scripts -->
+    <script src="/js/firebase.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/roles.js"></script>
+    <script src="/js/inventory.js"></script>
+    <script src="/js/orders.js"></script>
+    <script src="/js/notifications.js"></script>
+
+    <script>
+        // Page-specific logic for the Customer App
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check auth state
+            auth.onAuthStateChanged(async user => {
+                if (user) {
+                    // Role check
+                    await checkUserRole(user.uid, 'Customer', () => {
+                        document.getElementById('auth-screen').style.display = 'none';
+                        document.getElementById('app-screen').style.display = 'block';
+                        document.getElementById('user-name').textContent = user.displayName || 'Customer';
+                        initializeApp();
+                    });
+                } else {
+                    document.getElementById('auth-screen').style.display = 'block';
+                    document.getElementById('app-screen').style.display = 'none';
+                }
+            });
+
+            function initializeApp() {
+                // Mock area check
+                checkAreaAvailability();
+
+                // Load initial data
+                loadBanners();
+                loadCategories();
+                loadNewlyLaunched();
+                loadAllProducts();
+
+                // Check for active orders
+                customerCheckForActiveOrder(auth.currentUser.uid);
+            }
+
+            function checkAreaAvailability() {
+                const areaStatus = document.getElementById('area-status');
+                const mainContent = document.getElementById('main-content');
+                // This is a mock. In a real app, you might use geolocation and check against a polygon.
+                const isServiceable = true; // Replace with actual logic
+                if (isServiceable) {
+                    areaStatus.textContent = "✅ Great! We deliver to your location.";
+                    areaStatus.style.color = 'var(--success-color)';
+                    mainContent.style.display = 'block';
+                } else {
+                    areaStatus.textContent = "❌ Sorry, we don't currently serve your area.";
+                     areaStatus.style.color = 'var(--error-color)';
+                    mainContent.style.display = 'none';
+                }
+            }
+
+            // --- Cart Logic ---
+            const cartFAB = document.getElementById('cart-fab');
+            const cartModal = document.getElementById('cart-modal');
+            const closeBtn = cartModal.querySelector('.close-btn');
+            const cartItemsContainer = document.getElementById('cart-items');
+            const cartCountEl = document.getElementById('cart-count');
+
+            let cart = [];
+
+            function updateCartCount() {
+                const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+                cartCountEl.textContent = totalItems;
+            }
+
+            function renderCart() {
+                cartItemsContainer.innerHTML = '';
+                if (cart.length === 0) {
+                    cartItemsContainer.innerHTML = '<p>Your cart is empty.</p>';
+                    document.getElementById('place-order-btn').disabled = true;
+                    return;
+                }
+
+                let total = 0;
+                cart.forEach(item => {
+                    const itemTotal = item.price * item.quantity;
+                    total += itemTotal;
+                    cartItemsContainer.innerHTML += `
+                        <div class="cart-item">
+                            <p>${item.name} (${item.quantity} x ₹${item.price})</p>
+                            <p>₹${itemTotal.toFixed(2)}</p>
+                        </div>
+                    `;
+                });
+
+                cartItemsContainer.innerHTML += `<hr><p class="cart-total">Total: ₹${total.toFixed(2)}</p>`;
+                document.getElementById('place-order-btn').disabled = false;
+            }
+
+            window.addToCart = (itemId, name, price, unitType, unitLabel) => {
+                const existingItem = cart.find(item => item.itemId === itemId);
+                if (existingItem) {
+                    existingItem.quantity++;
+                } else {
+                    cart.push({ itemId, name, price, unitType, unitLabel, quantity: 1 });
+                }
+                updateCartCount();
+                renderCart();
+            };
+
+            cartFAB.addEventListener('click', () => cartModal.style.display = 'flex');
+            closeBtn.addEventListener('click', () => cartModal.style.display = 'none');
+            window.addEventListener('click', (event) => {
+                if (event.target === cartModal) {
+                    cartModal.style.display = 'none';
+                }
+            });
+
+            // --- Place Order ---
+            document.getElementById('place-order-btn').addEventListener('click', () => {
+                const paymentMethod = document.getElementById('payment-method').value;
+                const user = auth.currentUser;
+                if (!user || cart.length === 0) {
+                    alert('Cannot place order. Please check your cart or login status.');
+                    return;
+                }
+
+                const orderData = {
+                    customerId: user.uid,
+                    customerName: user.displayName,
+                    items: cart,
+                    paymentMethod,
+                    status: 'PLACED',
+                    createdAt: new Date().toISOString()
+                };
+
+                placeOrder(orderData).then(() => {
+                    alert('Order placed successfully!');
+                    cart = [];
+                    updateCartCount();
+                    renderCart();
+                    cartModal.style.display = 'none';
+                    document.getElementById('order-status-section').style.display = 'block';
+                    customerCheckForActiveOrder(user.uid);
+                }).catch(error => {
+                    console.error("Order placement failed: ", error);
+                    alert(`Error placing order: ${error.message}`);
+                });
+            });
+
+             // --- Search Logic ---
+            const searchInput = document.getElementById('search-input');
+            searchInput.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                filterProducts(searchTerm);
+            });
+        });
+    </script>
+</body>
+</html>```
+
+---
+*Generated by Google AI*

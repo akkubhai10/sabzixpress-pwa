@@ -1,0 +1,22 @@
+/* /css/theme.css */
+:root {
+    --primary-color: #4CAF50; /* Green for customer app */
+    --secondary-color: #FF9800; /* Orange for picker app */
+    --tertiary-color: #2196F3; /* Blue for delivery app */
+    --admin-color: #607D8B; /* Slate Gray for admin */
+    
+    --success-color: #4CAF50;
+    --error-color: #f44336;
+    --warning-color: #ffeb3b;
+
+    --background-color: #f4f6f8;
+    --surface-color: #ffffff;
+    --text-primary-color: #212121;
+    --text-secondary-color: #757575;
+    --border-color: #e0e0e0;
+    --modal-backdrop-color: rgba(0, 0, 0, 0.6);
+
+    --font-family: 'Roboto', 'Segoe UI', sans-serif;
+    --border-radius: 8px;
+    --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}```

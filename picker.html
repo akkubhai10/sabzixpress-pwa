@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Picker Dashboard</title>
+    <link rel="stylesheet" href="/css/theme.css">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#FF9800">
+</head>
+<body>
+
+    <!-- Auth Screen -->
+    <div id="auth-screen" class="screen active">
+        <div class="container">
+            <h1>Picker Login</h1>
+            <div id="login-view">
+                <input type="email" id="login-email" placeholder="Email" autocomplete="email">
+                <input type="password" id="login-password" placeholder="Password" autocomplete="current-password">
+                <button id="login-btn" class="btn primary">Login</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Screen (Protected) -->
+    <div id="app-screen" class="screen" style="display: none;">
+        <header>
+            <div class="container">
+                <h2>Picker Dashboard</h2>
+                <div class="header-icons">
+                    <span id="user-name"></span>
+                    <button id="logout-btn" class="btn-icon">🚪</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="container">
+            <div id="idle-view" class="card text-center">
+                <h3>Waiting for new orders...</h3>
+                <p>You will be alerted when an order is assigned to you.</p>
+            </div>
+
+            <div id="order-view" class="card" style="display: none;">
+                <h3 id="order-id-display">Order #12345</h3>
+                <div id="order-items-list">
+                    <!-- Items will be dynamically inserted here -->
+                </div>
+                <hr>
+                <div class="form-group">
+                     <label for="delay-reason">Reason for Partial Fulfillment (if any):</label>
+                    <input type="text" id="delay-reason" placeholder="e.g., Item quality not good">
+                </div>
+                <div class="button-group">
+                    <button id="partial-fulfill-btn" class="btn secondary">Partially Fulfill</button>
+                    <button id="pack-complete-btn" class="btn primary">Mark as Packed</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Emergency Alarm Modal -->
+    <div id="alarm-modal" class="modal alarm-modal">
+        <div class="modal-content text-center">
+            <h2>🚨 New Order Received! 🚨</h2>
+            <p>A new order has been assigned to you.</p>
+            <button id="accept-order-btn" class="btn success large">Accept Order & Stop Alarm</button>
+        </div>
+    </div>
+    
+    <!-- Audio element for the alarm -->
+    <audio id="alarm-sound" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" loop></audio>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-messaging-compat.js"></script>
+
+    <!-- App Logic Scripts -->
+    <script src="/js/firebase.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/roles.js"></script>
+    <script src="/js/orders.js"></script>
+    <script src="/js/alerts.js"></script>
+    <script src="/js/notifications.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            let currentPickerOrder = null;
+            let isPickerBusy = false;
+
+            const idleView = document.getElementById('idle-view');
+            const orderView = document.getElementById('order-view');
+            const alarmModal = document.getElementById('alarm-modal');
+            const acceptOrderBtn = document.getElementById('accept-order-btn');
+
+            // Check auth state
+            auth.onAuthStateChanged(async user => {
+                if (user) {
+                    await checkUserRole(user.uid, 'Picker', () => {
+                        document.getElementById('auth-screen').style.display = 'none';
+                        document.getElementById('app-screen').style.display = 'block';
+                        document.getElementById('user-name').textContent = user.displayName || 'Picker';
+                        initializeApp(user.uid);
+                    });
+                } else {
+                    document.getElementById('auth-screen').style.display = 'block';
+                    document.getElementById('app-screen').style.display = 'none';
+                }
+            });
+
+            function initializeApp(pickerId) {
+                // Listen for orders assigned to this picker
+                listenForPickerOrders(pickerId, (order) => {
+                    if (isPickerBusy) {
+                        // If picker is busy with an active order, notify admin about the waiting order
+                        console.log(`Picker busy. Notifying admin about new waiting order: ${order.orderId}`);
+                        notifyAdmin(`Picker is busy. New order ${order.orderId} is in 'WAITING_FOR_PICKER' state.`);
+                    } else {
+                        // This is a new order for a free picker
+                        currentPickerOrder = order;
+                        isPickerBusy = true;
+                        displayOrderAndTriggerAlarm(order);
+                    }
+                });
+            }
+
+            function displayOrderAndTriggerAlarm(order) {
+                // Hide idle view
+                idleView.style.display = 'none';
+                
+                // Populate order view (but keep it hidden until accepted)
+                document.getElementById('order-id-display').textContent = `Order #${order.orderId}`;
+                const itemsList = document.getElementById('order-items-list');
+                itemsList.innerHTML = ''; // Clear previous items
+                order.items.forEach(item => {
+                    const itemEl = document.createElement('div');
+                    itemEl.className = 'order-item-picker';
+                    itemEl.innerHTML = `
+                        <input type="checkbox" id="item-${item.itemId}" data-item-id="${item.itemId}">
+                        <label for="item-${item.itemId}">${item.name} (Qty: ${item.quantity})</label>
+                    `;
+                    itemsList.appendChild(itemEl);
+                });
+
+                // Show and play alarm
+                alarmModal.style.display = 'flex';
+                playAlarm();
+            }
+
+            acceptOrderBtn.addEventListener('click', () => {
+                if (currentPickerOrder) {
+                    stopAlarm();
+                    alarmModal.style.display = 'none';
+                    orderView.style.display = 'block';
+
+                    // Update order status to PACKING
+                    updateOrderStatus(currentPickerOrder.orderId, 'PACKING')
+                        .catch(err => console.error("Failed to update status to PACKING", err));
+                }
+            });
+
+            function resetPickerState() {
+                isPickerBusy = false;
+                currentPickerOrder = null;
+                orderView.style.display = 'none';
+                idleView.style.display = 'block';
+                document.getElementById('delay-reason').value = '';
+            }
+
+            // --- Packing Completion Logic ---
+            document.getElementById('pack-complete-btn').addEventListener('click', async () => {
+                if (!currentPickerOrder) return;
+                
+                const allItems = Array.from(document.querySelectorAll('#order-items-list input[type="checkbox"]'));
+                const unpickedItems = allItems.filter(cb => !cb.checked);
+
+                if (unpickedItems.length > 0) {
+                    alert('Please check off all items or use "Partially Fulfill".');
+                    return;
+                }
+
+                await updateOrderStatus(currentPickerOrder.orderId, 'PACKED');
+                alert('Order marked as PACKED.');
+                resetPickerState();
+            });
+
+            document.getElementById('partial-fulfill-btn').addEventListener('click', async () => {
+                if (!currentPickerOrder) return;
+
+                const reason = document.getElementById('delay-reason').value;
+                if (!reason) {
+                    alert('A reason is mandatory for partial fulfillment.');
+                    return;
+                }
+
+                const allItems = Array.from(document.querySelectorAll('#order-items-list input[type="checkbox"]'));
+                const fulfilledItems = allItems
+                    .filter(cb => cb.checked)
+                    .map(cb => cb.dataset.itemId);
+                
+                const originalItems = currentPickerOrder.items;
+                const updatedItems = originalItems.filter(item => fulfilledItems.includes(item.itemId));
+                
+                // Update the order with only the fulfilled items and a note
+                await updateOrderFulfillment(currentPickerOrder.orderId, updatedItems, reason);
+                await updateOrderStatus(currentPickerOrder.orderId, 'PACKED');
+                alert('Order marked as PACKED (Partially).');
+                resetPickerState();
+            });
+        });
+    </script>
+
+</body>
+</html>

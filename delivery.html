@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Partner</title>
+    <link rel="stylesheet" href="/css/theme.css">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#2196F3">
+</head>
+<body>
+
+    <!-- Auth Screen -->
+    <div id="auth-screen" class="screen active">
+        <div class="container">
+            <h1>Delivery Partner Login</h1>
+            <div id="login-view">
+                <input type="email" id="login-email" placeholder="Email" autocomplete="email">
+                <input type="password" id="login-password" placeholder="Password" autocomplete="current-password">
+                <button id="login-btn" class="btn primary">Login</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Screen (Protected) -->
+    <div id="app-screen" class="screen" style="display: none;">
+        <header>
+            <div class="container header-flex">
+                <h2>Delivery Dashboard</h2>
+                <div class="header-icons">
+                    <span id="user-name"></span>
+                    <button id="logout-btn" class="btn-icon">🚪</button>
+                </div>
+            </div>
+            <div class="container shift-controls">
+                 <label class="switch">
+                    <input type="checkbox" id="shift-toggle">
+                    <span class="slider round"></span>
+                </label>
+                <span id="shift-status">Shift is OFF</span>
+            </div>
+        </header>
+
+        <main class="container">
+            <!-- Idle View: Shift is ON, but no trip assigned -->
+            <div id="idle-view" class="card text-center">
+                <h3>You are ON Duty</h3>
+                <p>Waiting for a new trip assignment...</p>
+            </div>
+
+            <!-- Trip View: A trip is assigned -->
+            <div id="trip-view" class="card" style="display: none;">
+                <h3 id="trip-id-display">Trip ID: TRIP_XYZ</h3>
+                <p id="trip-route-display">Route: WARD_12_MAIN_ROAD</p>
+                <div id="trip-orders-list">
+                    <!-- Orders within the trip will be rendered here -->
+                </div>
+            </div>
+
+            <!-- Return to Store View: Trip is complete, waiting for confirmation -->
+            <div id="return-to-store-view" class="card text-center" style="display: none;">
+                <h3>Trip Complete!</h3>
+                <p>Please return to the store and ask the admin to scan your device to confirm your return.</p>
+                <div class="form-group">
+                    <input type="text" id="store-qr-code" placeholder="Enter Code from Admin QR">
+                    <button id="confirm-return-btn" class="btn primary">Confirm Return</button>
+                </div>
+            </div>
+             <!-- Off Shift View -->
+            <div id="off-shift-view" class="card text-center" style="display: none;">
+                <h3>You are OFF Duty</h3>
+                <p>Please turn your shift ON to receive new trips.</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- UPI QR Code Modal -->
+    <div id="upi-qr-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2>Scan Store QR Code to Pay</h2>
+            <img src="https://placehold.co/300x300?text=Store+UPI+QR" alt="Store UPI QR Code" id="upi-qr-image">
+            <p>Show this QR to the customer for UPI payment.</p>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-messaging-compat.js"></script>
+
+    <!-- App Logic Scripts -->
+    <script src="/js/firebase.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/roles.js"></script>
+    <script src="/js/delivery.js"></script>
+    <script src="/js/notifications.js"></script>
+    <script src="/js/alerts.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            let currentUser;
+
+            // UI Elements
+            const shiftToggle = document.getElementById('shift-toggle');
+            const shiftStatus = document.getElementById('shift-status');
+            const idleView = document.getElementById('idle-view');
+            const tripView = document.getElementById('trip-view');
+            const returnToStoreView = document.getElementById('return-to-store-view');
+            const offShiftView = document.getElementById('off-shift-view');
+
+            auth.onAuthStateChanged(async user => {
+                if (user) {
+                    await checkUserRole(user.uid, 'Delivery', () => {
+                        currentUser = user;
+                        document.getElementById('auth-screen').style.display = 'none';
+                        document.getElementById('app-screen').style.display = 'block';
+                        document.getElementById('user-name').textContent = user.displayName || 'Delivery';
+                        initializeApp(user.uid);
+                    });
+                } else {
+                    document.getElementById('auth-screen').style.display = 'block';
+                    document.getElementById('app-screen').style.display = 'none';
+                }
+            });
+
+            function initializeApp(deliveryId) {
+                // Set initial shift state from Firebase
+                getDeliveryPartnerShiftState(deliveryId).then(isShiftOn => {
+                    shiftToggle.checked = isShiftOn;
+                    updateShiftUI(isShiftOn);
+                });
+
+                // Listen for assigned trips
+                listenForDeliveryTrips(deliveryId, (trip) => {
+                    if (trip) {
+                        if (trip.status === 'TRIP_COMPLETED_PENDING_STORE_CONFIRM') {
+                            displayReturnToStoreView(trip);
+                        } else {
+                            displayTripView(trip);
+                            playAlert(); // Sound alert for new trip
+                        }
+                    } else {
+                        // No active trip, show idle or off-shift view
+                        updateShiftUI(shiftToggle.checked);
+                    }
+                });
+            }
+
+            // Shift Management
+            shiftToggle.addEventListener('change', async () => {
+                const isShiftOn = shiftToggle.checked;
+                await setDeliveryPartnerShiftState(currentUser.uid, isShiftOn);
+                updateShiftUI(isShiftOn);
+            });
+
+            function updateShiftUI(isShiftOn) {
+                shiftStatus.textContent = isShiftOn ? 'Shift is ON' : 'Shift is OFF';
+                if (isShiftOn) {
+                    // Only show idle view if there's no trip
+                    if (tripView.style.display === 'none' && returnToStoreView.style.display === 'none') {
+                        idleView.style.display = 'block';
+                    }
+                    offShiftView.style.display = 'none';
+                } else {
+                    idleView.style.display = 'none';
+                    offShiftView.style.display = 'block';
+                    tripView.style.display = 'none';
+                    returnToStoreView.style.display = 'none';
+                }
+            }
+            
+            // Render Trip Details
+            function displayTripView(trip) {
+                idleView.style.display = 'none';
+                offShiftView.style.display = 'none';
+                returnToStoreView.style.display = 'none';
+                tripView.style.display = 'block';
+
+                document.getElementById('trip-id-display').textContent = `Trip ID: ${trip.tripId}`;
+                document.getElementById('trip-route-display').textContent = `Route: ${trip.routeKey}`;
+                
+                const ordersList = document.getElementById('trip-orders-list');
+                ordersList.innerHTML = ''; // Clear previous orders
+
+                trip.orders.forEach(order => {
+                    const orderEl = document.createElement('div');
+                    orderEl.className = 'trip-order-item card';
+                    orderEl.dataset.orderId = order.orderId;
+                    
+                    let paymentSection = '';
+                    if (order.paymentMethod === 'UPI_ON_DELIVERY') {
+                        paymentSection = `
+                            <button class="btn secondary btn-sm" onclick="showUpiQr()">Show UPI QR</button>
+                            <button class="btn success btn-sm" onclick="confirmPayment('${order.orderId}')">Payment Received</button>
+                        `;
+                    } else { // COD
+                         paymentSection = `<button class="btn success btn-sm" onclick="confirmPayment('${order.orderId}')">Cash Received</button>`;
+                    }
+
+                    orderEl.innerHTML = `
+                        <h4>Order #${order.orderId}</h4>
+                        <p>Customer: ${order.customerName}</p>
+                        <p>Status: <span class="status-badge status-${order.status}">${order.status}</span></p>
+                        <div class="payment-section" id="payment-for-${order.orderId}" style="${order.paymentConfirmed ? 'display:none;' : ''}">
+                            ${paymentSection}
+                        </div>
+                        <button class="btn primary" id="deliver-btn-${order.orderId}" onclick="markAsDelivered('${trip.tripId}','${order.orderId}')" ${!order.paymentConfirmed}>Mark as Delivered</button>
+                    `;
+                    ordersList.appendChild(orderEl);
+                });
+            }
+
+            // Render Return to Store view
+            function displayReturnToStoreView(trip) {
+                idleView.style.display = 'none';
+                tripView.style.display = 'none';
+                offShiftView.style.display = 'none';
+                returnToStoreView.style.display = 'block';
+                document.getElementById('confirm-return-btn').onclick = () => confirmStoreReturn(trip.tripId, currentUser.uid);
+            }
+
+            // --- Window-scoped functions for button clicks ---
+            window.showUpiQr = () => {
+                document.getElementById('upi-qr-modal').style.display = 'flex';
+            };
+
+            window.confirmPayment = (orderId) => {
+                confirmOrderPayment(orderId).then(() => {
+                    document.getElementById(`payment-for-${orderId}`).style.display = 'none';
+                    document.getElementById(`deliver-btn-${orderId}`).disabled = false;
+                    alert('Payment confirmed.');
+                });
+            };
+
+            window.markAsDelivered = (tripId, orderId) => {
+                updateOrderStatus(orderId, 'DELIVERED').then(() => {
+                    alert(`Order ${orderId} marked as DELIVERED.`);
+                    checkTripCompletion(tripId, currentUser.uid); // Check if all orders in trip are done
+                });
+            };
+
+            // Modal close logic
+            const upiModal = document.getElementById('upi-qr-modal');
+            upiModal.querySelector('.close-btn').addEventListener('click', () => upiModal.style.display = 'none');
+            window.addEventListener('click', (event) => {
+                if (event.target === upiModal) {
+                    upiModal.style.display = 'none';
+                }
+            });
+
+             // --- Store Return Logic ---
+            window.confirmStoreReturn = async (tripId, deliveryId) => {
+                const inputCode = document.getElementById('store-qr-code').value;
+                if (!inputCode) {
+                    alert('Please enter the code from the admin QR.');
+                    return;
+                }
+                const isValid = await validateStoreReturnCode(inputCode);
+                if (isValid) {
+                    await closeTrip(tripId, deliveryId);
+                    alert('Return confirmed! You are now available for new trips.');
+                    returnToStoreView.style.display = 'none';
+                    updateShiftUI(shiftToggle.checked);
+                } else {
+                    alert('Invalid confirmation code. Please try again.');
+                }
+            };
+        });
+    </script>
+</body>
+</html>

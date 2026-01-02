@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="/css/theme.css">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#607D8B">
+    <style>
+        /* Admin-specific styles */
+        body { font-size: 14px; }
+        .admin-nav { background-color: #f4f4f4; padding: 10px; display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; }
+        .admin-nav button { background: #e0e0e0; border: none; padding: 10px 15px; cursor: pointer; border-radius: 5px; }
+        .admin-nav button.active { background: var(--primary-color); color: white; }
+        .admin-view { display: none; padding: 15px; }
+        .admin-view.active { display: block; }
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
+        .stat-card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;}
+        .stat-card h4 { margin-top: 0; }
+        .stat-card .count { font-size: 2em; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+
+    <!-- Auth Screen -->
+    <div id="auth-screen" class="screen active">
+        <div class="container">
+            <h1>Admin Login</h1>
+            <input type="email" id="login-email" placeholder="Email" autocomplete="email">
+            <input type="password" id="login-password" placeholder="Password" autocomplete="current-password">
+            <button id="login-btn" class="btn primary">Login</button>
+        </div>
+    </div>
+
+    <!-- Main App Screen -->
+    <div id="app-screen" class="screen" style="display: none;">
+        <header>
+            <div class="container">
+                <h2>Admin Control Panel</h2>
+                <button id="logout-btn" class="btn secondary">Logout</button>
+            </div>
+        </header>
+
+        <nav class="admin-nav">
+            <button class="nav-btn active" data-view="dashboard">Dashboard</button>
+            <button class="nav-btn" data-view="orders">Orders</button>
+            <button class="nav-btn" data-view="inventory">Inventory</button>
+            <button class="nav-btn" data-view="delivery">Delivery Dispatch</button>
+            <button class="nav-btn" data-view="users">Users</button>
+            <button class="nav-btn" data-view="logs">Audit Logs</button>
+        </nav>
+
+        <main class="container">
+            <!-- Dashboard View -->
+            <div id="dashboard-view" class="admin-view active">
+                <h3>Real-time Overview</h3>
+                <div class="grid-container">
+                    <div class="stat-card"><h4>Placed Orders</h4><p class="count" id="placed-orders-count">0</p></div>
+                    <div class="stat-card"><h4>Packing</h4><p class="count" id="packing-orders-count">0</p></div>
+                    <div class="stat-card"><h4>Waiting for Delivery</h4><p class="count" id="waiting-delivery-count">0</p></div>
+                    <div class="stat-card"><h4>Out for Delivery</h4><p class="count" id="ofd-orders-count">0</p></div>
+                </div>
+                 <div class="card" style="margin-top: 20px;">
+                    <h4>Store Return QR Code</h4>
+                    <p>Display this code to delivery partners on their return.</p>
+                    <p style="font-size: 1.5em; font-weight: bold; background: #eee; padding: 10px;" id="store-qr-code-display">STORE_RETURN_123</p>
+                </div>
+            </div>
+
+            <!-- Orders View -->
+            <div id="orders-view" class="admin-view">
+                <h3>Manage Orders</h3>
+                <div style="overflow-x:auto;">
+                    <table id="orders-table">
+                        <thead><tr><th>ID</th><th>Customer</th><th>Status</th><th>Items</th><th>Actions</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Inventory View -->
+            <div id="inventory-view" class="admin-view">
+                <h3>Manage Inventory</h3>
+                <button id="add-new-item-btn" class="btn primary">Add New Item</button>
+                <button id="add-new-cat-btn" class="btn secondary">Add New Category</button>
+                <div style="overflow-x:auto;">
+                    <table id="inventory-table">
+                        <thead><tr><th>Name</th><th>Category</th><th>Price</th><th>Qty</th><th>Unit</th><th>Actions</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Delivery Dispatch View -->
+            <div id="delivery-view" class="admin-view">
+                <h3>Delivery Dispatch</h3>
+                <h4>Packed & Waiting Orders</h4>
+                <div id="packed-orders-list"></div>
+                <h4>Available Delivery Partners</h4>
+                <div id="available-partners-list"></div>
+                <button id="create-trip-btn" class="btn primary" disabled>Create Trip</button>
+            </div>
+            
+            <!-- Users View -->
+            <div id="users-view" class="admin-view">
+                <h3>User Management</h3>
+                 <div style="overflow-x:auto;">
+                    <table id="users-table">
+                        <thead><tr><th>UID</th><th>Email</th><th>Name</th><th>Role</th><th>Actions</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Logs View -->
+            <div id="logs-view" class="admin-view">
+                <h3>Audit Logs</h3>
+                 <div style="overflow-x:auto;">
+                    <table id="logs-table">
+                        <thead><tr><th>Timestamp</th><th>User</th><th>Role</th><th>Action</th><th>Reason</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Modals -->
+    <div id="item-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h3 id="item-modal-title">Add New Item</h3>
+            <form id="item-form">
+                <input type="hidden" id="item-id">
+                <input type="text" id="item-name" placeholder="Item Name" required>
+                <select id="item-category" required></select>
+                <input type="number" id="item-price" placeholder="Price" step="0.01" required>
+                <input type="number" id="item-qty" placeholder="Available Quantity" required>
+                <select id="item-unit-type" required>
+                    <option value="WEIGHT">Weight-based</option>
+                    <option value="UNIT">Unit-based</option>
+                </select>
+                <input type="text" id="item-unit-label" placeholder="Unit Label (e.g., kg, packet, piece)" required>
+                <input type="url" id="item-image-url" placeholder="Image URL">
+                 <label><input type="checkbox" id="item-is-new"> Mark as Newly Launched</label>
+                <button type="submit" class="btn primary">Save Item</button>
+            </form>
+        </div>
+    </div>
+    
+    <div id="category-modal" class="modal">
+        <div class="modal-content">
+             <span class="close-btn">&times;</span>
+            <h3>Add New Category</h3>
+            <form id="category-form">
+                <input type="text" id="cat-id" placeholder="Category ID (e.g., DAIRY)" required>
+                <input type="text" id="cat-name" placeholder="Category Name (e.g., Milk & Dairy)" required>
+                <input type="url" id="cat-image-url" placeholder="Image URL">
+                <select id="cat-status" required>
+                    <option value="ACTIVE">Active</option>
+                    <option value="COMING_SOON">Coming Soon</option>
+                </select>
+                <button type="submit" class="btn primary">Save Category</button>
+            </form>
+        </div>
+    </div>
+
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-messaging-compat.js"></script>
+    
+    <script src="/js/firebase.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/roles.js"></script>
+    <script src="/js/admin.js"></script>
+    <script src="/js/notifications.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            auth.onAuthStateChanged(async user => {
+                if (user) {
+                    await checkUserRole(user.uid, 'Admin', () => {
+                        document.getElementById('auth-screen').style.display = 'none';
+                        document.getElementById('app-screen').style.display = 'block';
+                        initializeApp(user.uid);
+                    });
+                } else {
+                    document.getElementById('auth-screen').style.display = 'block';
+                    document.getElementById('app-screen').style.display = 'none';
+                }
+            });
+
+            function initializeApp(adminId) {
+                // Set up navigation
+                const navButtons = document.querySelectorAll('.nav-btn');
+                const views = document.querySelectorAll('.admin-view');
+                navButtons.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        navButtons.forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        views.forEach(v => v.classList.remove('active'));
+                        document.getElementById(`${btn.dataset.view}-view`).classList.add('active');
+                    });
+                });
+
+                // Load initial data for all views
+                loadDashboardData();
+                loadOrdersData();
+                loadInventoryData();
+                loadDeliveryDispatchData();
+                loadUsersData();
+                loadLogsData();
+                
+                // Display the fixed QR code value
+                getStoreReturnCode().then(code => {
+                    document.getElementById('store-qr-code-display').textContent = code;
+                });
+            }
+            
+            // Modal handling
+            const itemModal = document.getElementById('item-modal');
+            const catModal = document.getElementById('category-modal');
+            
+            document.getElementById('add-new-item-btn').addEventListener('click', () => openItemModal());
+            document.getElementById('add-new-cat-btn').addEventListener('click', () => {
+                catModal.querySelector('form').reset();
+                catModal.style.display = 'flex';
+            });
+
+            itemModal.querySelector('.close-btn').addEventListener('click', () => itemModal.style.display = 'none');
+            catModal.querySelector('.close-btn').addEventListener('click', () => catModal.style.display = 'none');
+            
+            // Form Submissions
+            document.getElementById('item-form').addEventListener('submit', handleItemFormSubmit);
+            document.getElementById('category-form').addEventListener('submit', handleCategoryFormSubmit);
+            document.getElementById('create-trip-btn').addEventListener('click', handleCreateTrip);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+{
+  "name": "SabziXpress",
+  "short_name": "SabziXpress",
+  "start_url": "/customer.html",
+  "display": "standalone",
+  "background_color": "#f4f6f8",
+  "theme_color": "#4CAF50",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "https://placehold.co/192x192?text=SX",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://placehold.co/512x512?text=SabziXpress",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}
