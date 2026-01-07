@@ -7,134 +7,58 @@
     <link rel="stylesheet" href="/css/theme.css">
     <link rel="stylesheet" href="/css/common.css">
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#FFDD00"> <!-- Blinkit Yellow -->
+    <meta name="theme-color" content="#FFDD00">
     <style>
-        /* New Custom styles for Blinkit-like UI */
-        body { background-color: var(--background-color-light); }
+        /* [FINAL CUSTOM UI STYLES FOR BLINKIT LOOK] */
         .yellow-header {
             background-color: var(--highlight-color);
             padding: 15px 0;
-            color: var(--text-primary-color);
             position: sticky;
             top: 0;
             z-index: 100;
         }
-        .yellow-header .container {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .header-top { display: flex; justify-content: space-between; align-items: center; }
+        .yellow-header .container { display: flex; align-items: center; gap: 10px; }
         .location-info { font-size: 14px; font-weight: bold; margin-bottom: 5px; }
         .search-container {
-            background-color: white;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            padding: 8px 15px;
-            margin-top: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            background-color: var(--surface-color); border-radius: 12px; display: flex;
+            align-items: center; padding: 8px 15px; margin-top: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
-        .search-container input {
-            border: none;
-            flex-grow: 1;
-            padding: 0;
-            margin: 0;
-            outline: none;
+        .bottom-nav { 
+            position: fixed; bottom: 0; left: 0; right: 0; display: flex; 
+            justify-content: space-around; background-color: var(--surface-color); 
+            border-top: 1px solid var(--border-color); z-index: 200; padding: 5px 0; height: 55px; 
         }
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            display: flex;
-            justify-content: space-around;
-            background-color: white;
-            border-top: 1px solid #eee;
-            z-index: 200;
-            padding: 5px 0;
-            height: 55px;
-        }
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-decoration: none;
-            color: var(--text-secondary-color);
-            font-size: 10px;
-        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; text-decoration: none; color: var(--text-secondary-color); font-size: 10px; }
         .nav-item.active { color: var(--primary-color); }
-        .nav-item span { font-size: 20px; } /* For icons */
-
-        /* Hamburger Menu (Sidebar) */
-        #sidebar-menu {
-            height: 100%;
-            width: 0;
-            position: fixed;
-            z-index: 300;
-            top: 0;
-            left: 0;
-            background-color: var(--surface-color);
-            overflow-x: hidden;
-            transition: 0.5s;
-            padding-top: 60px;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        .nav-item span { font-size: 20px; }
+        #sidebar-menu { 
+            height: 100%; width: 0; position: fixed; z-index: 300; top: 0; left: 0; 
+            background-color: var(--surface-color); overflow-x: hidden; transition: 0.5s; 
+            padding-top: 60px; box-shadow: 2px 0 10px rgba(0,0,0,0.1); 
         }
-        #sidebar-menu a {
-            padding: 15px 25px;
-            text-decoration: none;
-            font-size: 16px;
-            color: var(--text-primary-color);
-            display: block;
-            transition: 0.3s;
-            border-bottom: 1px solid var(--border-color);
-        }
-        #sidebar-menu a:hover { background-color: var(--background-color-light); }
-        .closebtn {
-            position: absolute;
-            top: 0;
-            right: 25px;
-            font-size: 36px;
-            margin-left: 50px;
-        }
-        .user-profile { padding: 15px 25px; border-bottom: 2px solid #ddd; }
-        .dark-mode-toggle { display: flex; justify-content: space-between; align-items: center; padding: 15px 25px; }
-
-        /* Location Screen */
-        #location-screen { background-color: var(--highlight-color); text-align: center; }
-        #location-screen .container { padding-top: 20vh; }
-
-        /* Order Status Page */
-        #order-status-page { padding-bottom: 70px; }
-        .status-card-fancy {
-            margin-top: 20px;
-            padding: 15px;
-            border-left: 5px solid var(--primary-color);
-        }
-        .status-timeline-fancy {
+         .cart-item {
             display: flex;
-            flex-direction: column;
-            gap: 10px;
-            padding: 15px 0;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px dashed var(--border-color);
         }
-        .timeline-step-fancy {
-            padding: 10px;
-            border-left: 2px solid #ccc;
-            position: relative;
-        }
-        .timeline-step-fancy.active { border-left: 2px solid var(--primary-color); }
-        .timeline-step-fancy::before {
-            content: '•';
-            position: absolute;
-            left: -11px;
-            top: 10px;
-            font-size: 20px;
-            line-height: 1;
-            color: #ccc;
-            background-color: white;
+        .quantity-control button {
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            margin: 0 5px;
             border-radius: 50%;
+            font-size: 18px;
+            font-weight: bold;
+            background-color: var(--primary-color);
+            color: white;
         }
-        .timeline-step-fancy.active::before { color: var(--primary-color); }
+        .quantity-control .qty {
+            display: inline-block;
+            width: 20px;
+            text-align: center;
+        }
     </style>
 </head>
 <body data-theme="light">
@@ -143,31 +67,38 @@
     <div id="sidebar-menu" class="shadow">
         <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
         <div class="user-profile">
-            <h4 id="menu-user-name">Hello, Customer</h4>
+            <h4 id="menu-user-name">Hello, User</h4>
             <p id="menu-user-email"></p>
         </div>
-        
         <a href="#" id="view-orders-link" onclick="showOrderPage()">Your Orders</a>
-        <a href="#" id="saved-address-link" onclick="showSaveAddressModal()">Saved Addresses</a>
-        <a href="#" id="share-link" onclick="shareApp()">Share App Link</a>
-        
         <div class="dark-mode-toggle">
             <span>Dark Mode</span>
-            <label class="switch">
-                <input type="checkbox" id="dark-mode-switch">
-                <span class="slider round"></span>
-            </label>
+            <label class="switch"><input type="checkbox" id="dark-mode-switch"><span class="slider round"></span></label>
         </div>
-        
         <a href="#" id="logout-btn" class="btn-block btn secondary">Logout</a>
     </div>
 
     <!-- AUTH SCREEN -->
     <div id="auth-screen" class="screen active">
-        <!-- ... (Same login/signup UI as before) ... -->
+        <div class="container">
+            <h1>Welcome to SabziXpress</h1>
+            <div id="login-view">
+                <input type="email" id="login-email" placeholder="Email" autocomplete="email">
+                <input type="password" id="login-password" placeholder="Password" autocomplete="current-password">
+                <button id="login-btn" class="btn primary">Login</button>
+                <p>New here? <a href="#" id="show-signup">Create an account</a></p>
+            </div>
+            <div id="signup-view" style="display: none;">
+                <input type="text" id="signup-name" placeholder="Full Name" autocomplete="name">
+                <input type="email" id="signup-email" placeholder="Email" autocomplete="email">
+                <input type="password" id="signup-password" placeholder="Password" autocomplete="new-password">
+                <button id="signup-btn" class="btn primary">Sign Up</button>
+                <p>Already have an account? <a href="#" id="show-login">Login</a></p>
+            </div>
+        </div>
     </div>
 
-    <!-- LOCATION SCREEN (New Feature) -->
+    <!-- LOCATION SCREEN (Address Input) -->
     <div id="location-screen" class="screen" style="display: none;">
         <div class="container">
             <h1>Where should we deliver?</h1>
@@ -181,14 +112,14 @@
     <!-- MAIN APP SCREEN -->
     <div id="app-screen" class="screen" style="display: none;">
         
-        <!-- TOP YELLOW BLINKIT-STYLE HEADER -->
+        <!-- TOP HEADER -->
         <header class="yellow-header">
             <div class="container">
                 <button id="open-nav-btn" class="btn-icon" onclick="openNav()">☰</button>
                 <div style="flex-grow: 1;">
-                    <p style="font-size: 12px; margin: 0;">Blinkit in <span style="font-size: 16px; font-weight: bold;">18 minutes</span></p>
+                    <p style="font-size: 12px; margin: 0;">Sabzi Delivery in <span style="font-size: 16px; font-weight: bold;">~20 minutes</span></p>
                     <div class="location-info" id="delivery-location-display">
-                        <span id="pincode-display">AREA</span> - <span id="address-display">Union Bank ke</span>
+                        <span id="pincode-display">AREA</span> - <span id="address-display">Address Loading...</span>
                     </div>
                 </div>
                 <div class="search-container">
@@ -198,44 +129,36 @@
         </header>
 
         <main class="container" id="main-product-view" style="padding-bottom: 70px;">
-            <!-- Categories/Banners Section -->
             <div id="promo-banners" class="promo-container"></div>
             <section id="categories-section">
                 <h3>Categories</h3>
                 <div id="categories-grid" class="category-grid"></div>
             </section>
-
-            <!-- Products Section -->
             <section id="products-section">
                 <h3 id="product-list-title">All Products</h3>
                 <div id="products-grid" class="item-grid"></div>
             </section>
         </main>
         
-        <!-- ORDER STATUS VIEW (Moved from Home Screen) -->
+        <!-- ORDER STATUS VIEW (FANCY PAGE) -->
         <main class="container" id="order-status-page" style="display: none;">
             <h2>Your Current Order</h2>
-            <div id="active-order-details" class="status-card-fancy">
-                <!-- Active Order details will be displayed here -->
-            </div>
-            <div id="order-timeline-fancy" class="status-timeline-fancy">
-                <!-- Status timeline will be injected by JS -->
-            </div>
+            <div id="active-order-details" class="status-card-fancy"></div>
+            <div id="order-timeline-fancy" class="status-timeline-fancy"></div>
         </main>
 
         <!-- Cart Floating Button -->
         <button id="cart-fab" class="fab">🛒 <span id="cart-count">0</span></button>
         
-        <!-- BOTTOM NAVIGATION BAR (New) -->
+        <!-- BOTTOM NAVIGATION BAR -->
         <nav class="bottom-nav">
             <a href="#" class="nav-item active" onclick="showMainView(event)"><span>🏠</span>Home</a>
-            <a href="#" class="nav-item" onclick="showOrderPage(event)"><span>🛍️</span>Order Again</a>
-            <a href="#" class="nav-item" onclick="showCategoriesView(event)"><span>::</span>Categories</a>
+            <a href="#" class="nav-item" onclick="showOrderPage(event)"><span>🛍️</span>Orders</a>
             <a href="#" class="nav-item" onclick="openCart(event)"><span>🛒</span>Basket</a>
         </nav>
     </div>
 
-    <!-- Cart Modal (Updated for +/- Quantity) -->
+    <!-- Cart Modal (UPDATED for +/-) -->
     <div id="cart-modal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeCart()">&times;</span>
@@ -243,7 +166,6 @@
             <div id="cart-items"></div>
             <div id="cart-summary">
                 <p>Total: <span id="cart-total-display">₹0.00</span></p>
-                <h4>Select Payment Method</h4>
                 <select id="payment-method">
                     <option value="COD">Cash on Delivery (COD)</option>
                     <option value="UPI_ON_DELIVERY">UPI on Delivery</option>
@@ -253,13 +175,11 @@
         </div>
     </div>
     
-    <!-- Saved Address Modal (New) -->
-    <div id="save-address-modal" class="modal">
-         <!-- ... (Address form content) ... -->
-    </div>
-    
-    <!-- Firebase SDKs -->
-    <!-- ... (SDK imports) ... -->
+    <!-- FIREBASE SDKS (Fixed the Reference Error) -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-messaging-compat.js"></script>
 
     <!-- App Logic Scripts -->
     <script src="/js/firebase.js"></script>
@@ -268,9 +188,9 @@
     <script src="/js/inventory.js"></script>
     <script src="/js/orders.js"></script>
     <script src="/js/notifications.js"></script>
-
+    
     <script>
-        // --- Core UI Management ---
+        // --- CORE UI/UX FUNCTIONS ---
         function openNav() { document.getElementById("sidebar-menu").style.width = "250px"; }
         function closeNav() { document.getElementById("sidebar-menu").style.width = "0"; }
         
@@ -291,7 +211,7 @@
             document.querySelectorAll('.bottom-nav .nav-item').forEach(i => i.classList.remove('active'));
             document.getElementById('view-orders-link').classList.add('active');
             // Logic to load all past and current orders
-            customerCheckForActiveOrder(auth.currentUser.uid); // This will show the current order
+            customerCheckForActiveOrder(auth.currentUser.uid);
             showView('order-status-page');
         }
         
@@ -303,22 +223,16 @@
             document.getElementById('cart-modal').style.display = 'none';
         }
         
-        // --- Location Logic ---
+        // --- LOCATION LOGIC ---
         function checkAreaAvailability(pincode) {
             const statusEl = document.getElementById('area-status-location');
-            const mainContent = document.getElementById('main-product-view');
-            const appScreen = document.getElementById('app-screen');
-            const locationScreen = document.getElementById('location-screen');
-            
-            // Mock: For simplicity, we assume service is available for a test pincode
-            const isServiceable = (pincode === '110001' || pincode === '000000'); 
+            // Mock: Assumes service is available for a few test pincodes
+            const serviceablePincodes = ['110001', '000000', '122001'];
+            const isServiceable = serviceablePincodes.includes(pincode); 
             
             if (isServiceable) {
                 statusEl.textContent = "✅ Great! We deliver to this location.";
                 statusEl.style.color = 'var(--success-color)';
-                // Transition to main app
-                appScreen.style.display = 'block';
-                locationScreen.style.display = 'none';
                 return true;
             } else {
                 statusEl.textContent = "❌ Sorry, we don't currently serve this area.";
@@ -327,7 +241,7 @@
             }
         }
 
-        // --- Cart Logic (Updated) ---
+        // --- CART LOGIC (WITH +/-) ---
         let cart = [];
         
         window.addToCart = (itemId, name, price, unitType, unitLabel, action = 'add') => {
@@ -337,7 +251,7 @@
                 if (action === 'remove') cart[itemIndex].quantity--;
                 
                 if (cart[itemIndex].quantity <= 0) {
-                    cart.splice(itemIndex, 1); // Remove item if quantity is zero
+                    cart.splice(itemIndex, 1); 
                 }
             } else if (action === 'add') {
                 cart.push({ itemId, name, price, unitType, unitLabel, quantity: 1 });
@@ -383,7 +297,7 @@
              document.getElementById('place-order-btn').disabled = false;
         }
 
-        // --- App Initialization ---
+        // --- APP INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
             // Check auth state
             auth.onAuthStateChanged(async user => {
@@ -402,7 +316,6 @@
                                 loadAppContent(user.uid);
                             }
                         } else {
-                            // First time user or no location saved
                             document.getElementById('location-screen').style.display = 'block';
                         }
                     });
@@ -413,7 +326,7 @@
                 }
             });
 
-            // --- Location Submit ---
+            // --- LOCATION SUBMIT ---
             document.getElementById('set-location-btn').addEventListener('click', () => {
                 const pincode = document.getElementById('pincode-input').value;
                 const address = document.getElementById('address-input').value;
@@ -425,16 +338,13 @@
                 if (checkAreaAvailability(pincode)) {
                     localStorage.setItem('userPincode', pincode);
                     localStorage.setItem('userAddress', address);
-                    document.getElementById('delivery-location-display').innerHTML = `
-                        <span id="pincode-display">${pincode}</span> - <span id="address-display">${address.substring(0, 20)}...</span>
-                    `;
                     document.getElementById('app-screen').style.display = 'block';
                     document.getElementById('location-screen').style.display = 'none';
                     loadAppContent(auth.currentUser.uid);
                 }
             });
             
-            // --- Place Order ---
+            // --- PLACE ORDER ---
              document.getElementById('place-order-btn').addEventListener('click', () => {
                 const paymentMethod = document.getElementById('payment-method').value;
                 const user = auth.currentUser;
@@ -443,7 +353,6 @@
                     return;
                 }
                 
-                // Get Saved Location
                 const address = localStorage.getItem('userAddress') || 'N/A';
                 const pincode = localStorage.getItem('userPincode') || 'N/A';
 
@@ -456,7 +365,6 @@
                     paymentMethod,
                     status: 'PLACED',
                     createdAt: new Date().toISOString(),
-                    // Route key is simple logic for batching/delivery
                     routeKey: `AREA_${pincode}` 
                 };
 
@@ -465,49 +373,37 @@
                     cart = [];
                     updateCartUI();
                     closeCart();
-                    showOrderPage(); // Show the new order status page
+                    showOrderPage(); 
                 }).catch(error => {
                     console.error("Order placement failed: ", error);
                     alert(`Error placing order: ${error.message}`);
                 });
             });
 
-            // --- Dark Mode Toggle ---
+            // --- DARK MODE TOGGLE ---
             document.getElementById('dark-mode-switch').addEventListener('change', (e) => {
                 document.body.dataset.theme = e.target.checked ? 'dark' : 'light';
                 localStorage.setItem('theme', e.target.checked ? 'dark' : 'light');
             });
-            // Apply saved theme
             const savedTheme = localStorage.getItem('theme') || 'light';
             document.body.dataset.theme = savedTheme;
             document.getElementById('dark-mode-switch').checked = (savedTheme === 'dark');
+             
+            // --- SIGNUP/LOGIN TABS ---
+            document.getElementById('show-signup').addEventListener('click', (e) => { e.preventDefault(); document.getElementById('login-view').style.display = 'none'; document.getElementById('signup-view').style.display = 'block'; });
+            document.getElementById('show-login').addEventListener('click', (e) => { e.preventDefault(); document.getElementById('signup-view').style.display = 'none'; document.getElementById('login-view').style.display = 'block'; });
 
         });
         
         function loadAppContent(userId) {
-            // Load app data
             loadBanners();
             loadCategories();
             loadAllProducts();
             customerCheckForActiveOrder(userId);
             
-            // Display location
             document.getElementById('delivery-location-display').innerHTML = `
                 <span id="pincode-display">${localStorage.getItem('userPincode')}</span> - <span id="address-display">${localStorage.getItem('userAddress').substring(0, 20)}...</span>
             `;
-        }
-
-         // --- Share Function ---
-        function shareApp() {
-            if (navigator.share) {
-                navigator.share({
-                    title: 'SabziXpress - Order Freshness in 18 Minutes!',
-                    text: 'Download and install our PWA for fast delivery.',
-                    url: 'https://sabzixpress.netlify.app/'
-                }).then(() => console.log('Successful share')).catch((error) => console.log('Error sharing', error));
-            } else {
-                alert(`Please copy this link: https://sabzixpress.netlify.app/ and share!`);
-            }
         }
     </script>
 </body>
